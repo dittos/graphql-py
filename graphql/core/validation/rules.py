@@ -7,11 +7,15 @@ from ..language.printer import print_ast
 
 
 class ValidationRule(Visitor):
+    __slots__ = ['context']
+
     def __init__(self, context):
         self.context = context
 
 
 class UniqueOperationNames(ValidationRule):
+    __slots__ = ['known_operation_names']
+
     def __init__(self, context):
         super(UniqueOperationNames, self).__init__(context)
         self.known_operation_names = {}
@@ -35,10 +39,11 @@ class UniqueOperationNames(ValidationRule):
 
 
 class LoneAnonymousOperation(ValidationRule):
-    operation_count = 0
+    __slots__ = ['operation_count']
 
     def __init__(self, context):
         super(LoneAnonymousOperation, self).__init__(context)
+        self.operation_count = 0
 
     def enter_Document(self, node, *args):
         self.operation_count = \
@@ -54,6 +59,8 @@ class LoneAnonymousOperation(ValidationRule):
 
 
 class KnownTypeNames(ValidationRule):
+    __slots__ = []
+
     def enter_NamedType(self, node, *args):
         type_name = node.name.value
         type = self.context.get_schema().get_type(type_name)
@@ -67,6 +74,8 @@ class KnownTypeNames(ValidationRule):
 
 
 class FragmentsOnCompositeTypes(ValidationRule):
+    __slots__ = []
+
     def enter_InlineFragment(self, node, *args):
         type = self.context.get_type()
 
@@ -95,6 +104,8 @@ class FragmentsOnCompositeTypes(ValidationRule):
 
 
 class VariablesAreInputTypes(ValidationRule):
+    __slots__ = []
+
     def enter_VariableDefinition(self, node, *args):
         type = type_from_ast(self.context.get_schema(), node.type)
 
@@ -110,6 +121,8 @@ class VariablesAreInputTypes(ValidationRule):
 
 
 class ScalarLeafs(ValidationRule):
+    __slots__ = []
+
     def enter_Field(self, node, *args):
         type = self.context.get_type()
 
@@ -139,6 +152,8 @@ class ScalarLeafs(ValidationRule):
 
 
 class FieldsOnCorrectType(ValidationRule):
+    __slots__ = []
+
     def enter_Field(self, node, *args):
         type = self.context.get_parent_type()
         if not type:
@@ -157,6 +172,8 @@ class FieldsOnCorrectType(ValidationRule):
 
 
 class UniqueFragmentNames(ValidationRule):
+    __slots__ = ['known_fragment_names']
+
     def __init__(self, context):
         super(UniqueFragmentNames, self).__init__(context)
         self.known_fragment_names = {}
@@ -177,6 +194,8 @@ class UniqueFragmentNames(ValidationRule):
 
 
 class KnownFragmentNames(ValidationRule):
+    __slots__ = []
+
     def enter_FragmentSpread(self, node, *args):
         fragment_name = node.name.value
         fragment = self.context.get_fragment(fragment_name)
@@ -193,6 +212,8 @@ class KnownFragmentNames(ValidationRule):
 
 
 class NoUnusedFragments(ValidationRule):
+    __slots__ = ['fragment_definitions', 'spreads_within_operation', 'fragment_adjacencies', 'spread_names']
+
     def __init__(self, context):
         super(NoUnusedFragments, self).__init__(context)
         self.fragment_definitions = []
@@ -234,7 +255,7 @@ class NoUnusedFragments(ValidationRule):
             )
             for fragment_definition in self.fragment_definitions
             if fragment_definition.name.value not in fragment_names_used
-        ]
+            ]
 
         if errors:
             return errors
@@ -249,13 +270,15 @@ class PossibleFragmentSpreads(ValidationRule):
 
 
 class NoFragmentCycles(ValidationRule):
+    __slots__ = ['spreads_in_fragment', 'known_to_lead_to_cycle']
+
     def __init__(self, context):
         super(NoFragmentCycles, self).__init__(context)
         self.spreads_in_fragment = {
             node.name.value: self.gather_spreads(node)
             for node in context.get_ast().definitions
             if isinstance(node, ast.FragmentDefinition)
-        }
+            }
         self.known_to_lead_to_cycle = set()
 
     def enter_FragmentDefinition(self, node, *args):
@@ -267,7 +290,7 @@ class NoFragmentCycles(ValidationRule):
         # to a set. Otherwise we get a `unhashable type: dict` error.
         # This makes it so that we can define a way to uniquely identify a FragmentDefinition
         # within a set.
-        fragment_node_to_hashable = lambda fs: (fs.loc['start'], fs.loc['end'], fs.name.value)
+        fragment_node_to_hashable = lambda fs: (fs.loc.start, fs.loc.end, fs.name.value)
 
         def detect_cycle_recursive(fragment_name):
             spread_nodes = self.spreads_in_fragment[fragment_name]
@@ -309,6 +332,8 @@ class NoFragmentCycles(ValidationRule):
         return visitor.collect_fragment_spread_nodes()
 
     class CollectFragmentSpreadNodesVisitor(Visitor):
+        __slots__ = ['spread_nodes']
+
         def __init__(self):
             self.spread_nodes = []
 
@@ -320,10 +345,12 @@ class NoFragmentCycles(ValidationRule):
 
 
 class NoUndefinedVariables(ValidationRule):
+    __slots__ = ['operation', 'visited_fragment_names', 'defined_variable_names']
+
     visit_spread_fragments = True
-    operation = None
 
     def __init__(self, context):
+        self.operation = None
         self.visited_fragment_names = set()
         self.defined_variable_names = set()
         super(NoUndefinedVariables, self).__init__(context)
@@ -369,13 +396,14 @@ class NoUndefinedVariables(ValidationRule):
 
 
 class NoUnusedVariables(ValidationRule):
-    visited_fragment_names = None
-    variable_definitions = None
-    variable_name_used = None
+    __slots__ = ['visited_fragment_names', 'variable_definitions', 'variable_name_used']
     visit_spread_fragments = True
 
     def __init__(self, context):
         super(NoUnusedVariables, self).__init__(context)
+        self.visited_fragment_names = None
+        self.variable_definitions = None
+        self.variable_name_used = None
 
     def enter_OperationDefinition(self, *args):
         self.visited_fragment_names = set()
@@ -419,6 +447,8 @@ class NoUnusedVariables(ValidationRule):
 
 
 class KnownDirectives(ValidationRule):
+    __slots__ = []
+
     def enter_Directive(self, node, key, parent, path, ancestors):
         directive_def = next((
             definition for definition in self.context.get_schema().get_directives()
@@ -462,6 +492,8 @@ class KnownDirectives(ValidationRule):
 
 
 class KnownArgumentNames(ValidationRule):
+    __slots__ = []
+
     def enter_Argument(self, node, key, parent, path, ancestors):
         argument_of = ancestors[-1]
 
@@ -503,6 +535,8 @@ class KnownArgumentNames(ValidationRule):
 
 
 class UniqueArgumentNames(ValidationRule):
+    __slots__ = ['known_arg_names']
+
     def __init__(self, context):
         super(UniqueArgumentNames, self).__init__(context)
         self.known_arg_names = {}
@@ -530,6 +564,8 @@ class UniqueArgumentNames(ValidationRule):
 
 
 class ArgumentsOfCorrectType(ValidationRule):
+    __slots__ = []
+
     def enter_Argument(self, node, *args):
         arg_def = self.context.get_argument()
         if arg_def and not is_valid_literal_value(arg_def.type, node.value):
@@ -545,6 +581,8 @@ class ArgumentsOfCorrectType(ValidationRule):
 
 
 class ProvidedNonNullArguments(ValidationRule):
+    __slots__ = []
+
     def leave_Field(self, node, *args):
         field_def = self.context.get_field_def()
         if not field_def:
@@ -595,6 +633,8 @@ class ProvidedNonNullArguments(ValidationRule):
 
 
 class DefaultValuesOfCorrectType(ValidationRule):
+    __slots__ = []
+
     def enter_VariableDefinition(self, node, *args):
         name = node.variable.name.value
         default_value = node.default_value

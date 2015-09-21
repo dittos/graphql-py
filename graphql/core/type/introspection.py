@@ -66,22 +66,36 @@ __Directive = GraphQLObjectType('__Directive', lambda: {
 })
 
 
+class TypeKind(object):
+    SCALAR = 0
+    OBJECT = 1
+    INTERFACE = 2
+    UNION = 3
+    ENUM = 4
+    INPUT_OBJECT = 5
+    LIST = 6
+    NON_NULL = 7
+
+
 class TypeFieldResolvers(object):
-    @staticmethod
-    def kind(type, *_):
-        for cls, kind in (
-            (GraphQLScalarType, TypeKind.SCALAR),
-            (GraphQLObjectType, TypeKind.OBJECT),
-            (GraphQLInterfaceType, TypeKind.INTERFACE),
-            (GraphQLUnionType, TypeKind.UNION),
-            (GraphQLEnumType, TypeKind.ENUM),
-            (GraphQLInputObjectType, TypeKind.INPUT_OBJECT),
-            (GraphQLList, TypeKind.LIST),
-            (GraphQLNonNull, TypeKind.NON_NULL),
-        ):
-            if isinstance(type, cls):
+    _class_to_kinds = (
+        (GraphQLScalarType, TypeKind.SCALAR),
+        (GraphQLObjectType, TypeKind.OBJECT),
+        (GraphQLInterfaceType, TypeKind.INTERFACE),
+        (GraphQLUnionType, TypeKind.UNION),
+        (GraphQLEnumType, TypeKind.ENUM),
+        (GraphQLInputObjectType, TypeKind.INPUT_OBJECT),
+        (GraphQLList, TypeKind.LIST),
+        (GraphQLNonNull, TypeKind.NON_NULL),
+    )
+
+    @classmethod
+    def kind(cls, type, *_):
+        for klass, kind in cls._class_to_kinds:
+            if isinstance(type, klass):
                 return kind
-        raise Exception('Unknown kind of type: {}'.format(type))
+
+        raise ValueError('Unknown kind of type: {}'.format(type))
 
     @staticmethod
     def fields(type, args, *_):
@@ -89,7 +103,9 @@ class TypeFieldResolvers(object):
             fields = type.get_fields().values()
             if not args.get('includeDeprecated'):
                 fields = [f for f in fields if not f.deprecation_reason]
+
             return fields
+
         return None
 
     @staticmethod
@@ -114,6 +130,7 @@ class TypeFieldResolvers(object):
     def input_fields(type, *_):
         if isinstance(type, GraphQLInputObjectType):
             return type.get_fields().values()
+
 
 __Type = GraphQLObjectType('__Type', lambda: {
     'kind': GraphQLField(
@@ -185,8 +202,8 @@ __InputValue = GraphQLObjectType('__InputValue', lambda: {
     'defaultValue': GraphQLField(
         type=GraphQLString,
         resolver=lambda input_val, *_:
-            None if input_val.default_value is None
-            else json.dumps(input_val.default_value)
+        None if input_val.default_value is None
+        else json.dumps(input_val.default_value)
     )
 })
 
@@ -202,17 +219,6 @@ __EnumValue = GraphQLObjectType('__EnumValue', lambda: {
         resolver=lambda enum_value, *_: enum_value.deprecation_reason,
     )
 })
-
-
-class TypeKind(object):
-    SCALAR = 0
-    OBJECT = 1
-    INTERFACE = 2
-    UNION = 3
-    ENUM = 4
-    INPUT_OBJECT = 5
-    LIST = 6
-    NON_NULL = 7
 
 __TypeKind = GraphQLEnumType(
     '__TypeKind',
@@ -264,9 +270,9 @@ IntrospectionSchema = __Schema
 SchemaMetaFieldDef = GraphQLField(
     type=GraphQLNonNull(__Schema),
     description='Access the current type schema of this server.',
-    resolver=lambda source, args, info: info.schema
+    resolver=lambda source, args, info: info.schema,
+    name='__schema'
 )
-SchemaMetaFieldDef.name = '__schema'
 
 TypeMetaFieldDef = GraphQLField(
     type=__Type,
@@ -274,12 +280,12 @@ TypeMetaFieldDef = GraphQLField(
     args={
         'name': GraphQLArgument(GraphQLNonNull(GraphQLString))
     },
-    resolver=lambda source, args, info: info.schema.get_type(args['name'])
+    resolver=lambda source, args, info: info.schema.get_type(args['name']),
+    name='__type'
 )
-TypeMetaFieldDef.name = '__type'
 
 TypeNameMetaFieldDef = GraphQLField(
     GraphQLNonNull(GraphQLString),
-    resolver=lambda source, args, info: info.parent_type.name
+    resolver=lambda source, args, info: info.parent_type.name,
+    name='__typename'
 )
-TypeNameMetaFieldDef.name = '__typename'

@@ -51,15 +51,18 @@ def visit_using_rules(schema, ast, rules):
 
 
 class ValidationVisitor(Visitor):
+    __slots__ = ['instance', 'type_info', 'errors', 'visit_spread_fragments']
+
     def __init__(self, instance, type_info, errors):
         self.instance = instance
         self.type_info = type_info
         self.errors = errors
+        self.visit_spread_fragments = getattr(self.instance, 'visit_spread_fragments', False)
 
     def enter(self, node, key, parent, path, ancestors):
         self.type_info.enter(node)
 
-        if isinstance(node, FragmentDefinition) and key and hasattr(self.instance, 'visit_spread_fragments'):
+        if isinstance(node, FragmentDefinition) and key and self.visit_spread_fragments:
             return False
 
         result = self.instance.enter(node, key, parent, path, ancestors)
@@ -67,7 +70,7 @@ class ValidationVisitor(Visitor):
             append(self.errors, result)
             result = False
 
-        if result is None and getattr(self.instance, 'visit_spread_fragments', False) and isinstance(node, FragmentSpread):
+        if result is None and self.visit_spread_fragments and isinstance(node, FragmentSpread):
             fragment = self.instance.context.get_fragment(node.name.value)
             if fragment:
                 visit(fragment, self)
@@ -102,6 +105,8 @@ def append(arr, items):
 
 
 class ValidationContext(object):
+    __slots__ = ['_schema', '_ast', '_type_info', '_fragments']
+
     def __init__(self, schema, ast, type_info):
         self._schema = schema
         self._ast = ast

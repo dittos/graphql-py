@@ -7,8 +7,7 @@ class GraphQLDirective(object):
 
 
 def arg(name, *args, **kwargs):
-    a = GraphQLArgument(*args, **kwargs)
-    a.name = name
+    a = GraphQLArgument(*args, name=name, **kwargs)
     return a
 
 

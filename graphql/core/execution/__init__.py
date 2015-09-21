@@ -52,6 +52,8 @@ class ExecutionContext(object):
 
     Namely, schema of the type system that is currently executing,
     and the fragments defined in the query document"""
+    __slots__ = ['schema', 'fragments', 'root', 'operation', 'variables', 'errors']
+
     def __init__(self, schema, root, document_ast, operation_name, args):
         """Constructs a ExecutionContext object from the arguments passed
         to execute, which we will pass throughout the other execution
@@ -89,6 +91,7 @@ class ExecutionResult(object):
     """The result of execution. `data` is the result of executing the
     query, `errors` is null if no errors occurred, and is a
     non-empty array if an error occurred."""
+    __slots__ = ['data', 'errors']
 
     def __init__(self, data, errors=None):
         self.data = data
@@ -101,11 +104,14 @@ def execute(schema, root, ast, operation_name='', args=None):
     ctx = ExecutionContext(schema, root, ast, operation_name, args)
     try:
         data = execute_operation(ctx, root, ctx.operation)
-    except Exception as e:
+
+    except GraphQLError as e:
         ctx.errors.append(e)
         data = None
+
     if not ctx.errors:
         return ExecutionResult(data)
+
     formatted_errors = list(map(format_error, ctx.errors))
     return ExecutionResult(data, formatted_errors)
 
@@ -240,6 +246,8 @@ def get_field_entry_key(node):
 
 
 class ResolveInfo(object):
+    __slots__ = ['field_name', 'field_ast', 'return_type', 'parent_type', 'context']
+
     def __init__(self, field_name, field_asts, return_type, parent_type, context):
         self.field_name = field_name
         self.field_ast = field_asts

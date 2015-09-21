@@ -7,6 +7,8 @@ __all__ = ['Token', 'Lexer', 'TokenKind',
 
 
 class Token(object):
+    __slots__ = ['kind', 'start', 'end', 'value']
+
     def __init__(self, kind, start, end, value=None):
         self.kind = kind
         self.start = start
@@ -29,6 +31,8 @@ class Token(object):
 
 
 class Lexer(object):
+    __slots__ = ['source', 'prev_position']
+
     def __init__(self, source):
         self.source = source
         self.prev_position = 0
@@ -73,10 +77,6 @@ def get_token_desc(token):
         return get_token_kind_desc(token.kind)
 
 
-def get_token_kind_desc(kind):
-    return TOKEN_DESCRIPTION[kind]
-
-
 TOKEN_DESCRIPTION = {
     TokenKind.EOF: 'EOF',
     TokenKind.BANG: '!',
@@ -98,6 +98,8 @@ TOKEN_DESCRIPTION = {
     TokenKind.FLOAT: 'Float',
     TokenKind.STRING: 'String',
 }
+
+get_token_kind_desc = TOKEN_DESCRIPTION.get
 
 
 def char_code_at(s, pos):

@@ -22,12 +22,14 @@ def type_from_ast(schema, input_type_ast):
             return GraphQLList(inner_type)
         else:
             return None
+
     if isinstance(input_type_ast, ast.NonNullType):
         inner_type = type_from_ast(schema, input_type_ast.type)
         if inner_type:
             return GraphQLNonNull(inner_type)
         else:
             return None
+
     assert isinstance(input_type_ast, ast.NamedType), 'Must be a type name.'
     return schema.get_type(input_type_ast.name.value)
 
@@ -82,6 +84,7 @@ class TypeInfo(object):
             if is_composite_type(named_type):
                 composite_type = named_type
             self._parent_type_stack.append(composite_type)
+
         elif isinstance(node, ast.Field):
             parent_type = self.get_parent_type()
             field_def = None
@@ -89,19 +92,24 @@ class TypeInfo(object):
                 field_def = get_field_def(schema, parent_type, node)
             self._field_def_stack.append(field_def)
             self._type_stack.append(field_def and field_def.type)
+
         elif isinstance(node, ast.Directive):
             self._directive = schema.get_directive(node.name.value)
+
         elif isinstance(node, ast.OperationDefinition):
             if node.operation == 'query':
                 type = schema.get_query_type()
             elif node.operation == 'mutation':
                 type = schema.get_mutation_type()
             self._type_stack.append(type)
+
         elif isinstance(node, (ast.InlineFragment, ast.FragmentDefinition)):
             type = type_from_ast(schema, node.type_condition)
             self._type_stack.append(type)
+
         elif isinstance(node, ast.VariableDefinition):
             self._input_type_stack.append(type_from_ast(schema, node.type))
+
         elif isinstance(node, ast.Argument):
             arg_def = None
             arg_type = None
@@ -115,11 +123,13 @@ class TypeInfo(object):
                     arg_def = None
             self._argument = arg_def
             self._input_type_stack.append(arg_type)
+
         elif isinstance(node, ast.ListType):
             list_type = get_nullable_type(self.get_input_type())
             self._input_type_stack.append(
                 list_type.of_type if isinstance(list_type, GraphQLList) else None
             )
+
         elif isinstance(node, ast.ObjectField):
             object_type = get_named_type(self.get_input_type())
             field_type = None
@@ -131,22 +141,28 @@ class TypeInfo(object):
     def leave(self, node):
         if isinstance(node, ast.SelectionSet):
             pop(self._parent_type_stack)
+
         elif isinstance(node, ast.Field):
             pop(self._field_def_stack)
             pop(self._type_stack)
+
         elif isinstance(node, ast.Directive):
             self._directive = None
+
         elif isinstance(node, (
                 ast.OperationDefinition,
                 ast.InlineFragment,
                 ast.FragmentDefinition,
         )):
             pop(self._type_stack)
+
         elif isinstance(node, ast.VariableDefinition):
             pop(self._input_type_stack)
+
         elif isinstance(node, ast.Argument):
             self._argument = None
             pop(self._input_type_stack)
+
         elif isinstance(node, (ast.ListType, ast.ObjectField)):
             pop(self._input_type_stack)
 
@@ -158,8 +174,10 @@ def get_field_def(schema, parent_type, field_ast):
     name = field_ast.name.value
     if name == SchemaMetaFieldDef.name and schema.get_query_type() == parent_type:
         return SchemaMetaFieldDef
+
     elif name == TypeMetaFieldDef.name and schema.get_query_type() == parent_type:
         return TypeMetaFieldDef
+
     elif name == TypeNameMetaFieldDef.name and \
             isinstance(parent_type, (
                 GraphQLObjectType,
@@ -167,6 +185,7 @@ def get_field_def(schema, parent_type, field_ast):
                 GraphQLUnionType,
             )):
         return TypeNameMetaFieldDef
+
     elif isinstance(parent_type, (GraphQLObjectType, GraphQLInterfaceType)):
         return parent_type.get_fields().get(name)
 

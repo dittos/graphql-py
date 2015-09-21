@@ -6,6 +6,8 @@ __all__ = ['LanguageError']
 
 
 class LanguageError(Error):
+    __slots__ = ['source', 'position', 'description']
+
     def __init__(self, source, position, description):
         self.source = source
         self.position = position

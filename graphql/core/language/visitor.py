@@ -150,6 +150,8 @@ def is_node(maybe_node):
 
 
 class Visitor(object):
+    __slots__ = []
+
     def enter(self, node, key, parent, path, ancestors):
         return self._call_kind_specific_visitor('enter_', node, key, parent, path, ancestors)
 

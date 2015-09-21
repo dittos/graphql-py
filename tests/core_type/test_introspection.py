@@ -1,4 +1,5 @@
 import json
+from pytest import raises
 from graphql.core import graphql
 from graphql.core.error import format_error
 from graphql.core.language.location import SourceLocation
@@ -16,6 +17,7 @@ from graphql.core.type import (
     GraphQLEnumType,
     GraphQLEnumValue,
 )
+from graphql.core.type.introspection import TypeFieldResolvers
 from graphql.core.validation.rules import ProvidedNonNullArguments
 
 introspection_query = '''
@@ -827,3 +829,13 @@ def test_exposes_descriptions_on_enums():
             }
         ]
     }})
+
+
+def test_type_field_resolver_resolves_unknown_kind():
+    class Unk(object):
+        pass
+
+    with raises(ValueError) as excinfo:
+        TypeFieldResolvers.kind(Unk())
+
+    assert 'Unknown kind of type: ' in str(excinfo.value)

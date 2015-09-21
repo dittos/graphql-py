@@ -23,6 +23,8 @@ class GraphQLSchema(object):
             mutation=MyAppMutationRootType
         )
     """
+    __slots__ = ['query', 'mutation', '_type_map', '_directives']
+
     def __init__(self, query, mutation=None):
         self.query = query
         self.mutation = mutation
@@ -72,6 +74,7 @@ def type_map_reducer(map, type):
 
     if not type or type.name in map:
         return map
+
     map[type.name] = type
 
     reduced_map = map

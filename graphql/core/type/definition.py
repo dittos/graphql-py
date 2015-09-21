@@ -43,6 +43,8 @@ def get_nullable_type(type):
 
 
 class GraphQLType(object):
+    __slots__ = ['name']
+
     def __str__(self):
         return self.name
 
@@ -63,6 +65,8 @@ class GraphQLScalarType(GraphQLType):
 
         OddType = GraphQLScalarType(name='Odd', serialize=coerce_odd)
     """
+    __slots__ = ['description', '_serialize', '_parse_value', '_parse_literal']
+
     def __init__(self, name, description=None, serialize=None, parse_value=None, parse_literal=None):
         assert name, 'Type must be named.'
         self.name = name
@@ -117,6 +121,8 @@ class GraphQLObjectType(GraphQLType):
             'bestFriend': GraphQLField(PersonType)
         })
     """
+    __slots__ = ['description', '_fields', '_field_map', '_interfaces', '_is_type_of']
+
     def __init__(self, name, fields, interfaces=None, is_type_of=None, description=None):
         assert name, 'Type must be named.'
         self.name = name
@@ -154,8 +160,10 @@ def add_impl_to_interfaces(impl):
 
 
 class GraphQLField(object):
+    __slots__ = ['type', 'args', 'resolver', 'deprecation_reason', 'description', 'name']
+
     def __init__(self, type, args=None, resolver=None,
-                 deprecation_reason=None, description=None):
+                 deprecation_reason=None, description=None, name=None):
         self.type = type
         self.args = []
         if args:
@@ -165,13 +173,17 @@ class GraphQLField(object):
         self.resolver = resolver
         self.deprecation_reason = deprecation_reason
         self.description = description
+        self.name = name
 
 
 class GraphQLArgument(object):
-    def __init__(self, type, default_value=None, description=None):
+    __slots__ = ['type', 'default_value', 'description', 'name']
+
+    def __init__(self, type, default_value=None, description=None, name=None):
         self.type = type
         self.default_value = default_value
         self.description = description
+        self.name = name
 
 
 class GraphQLInterfaceType(GraphQLType):
@@ -188,6 +200,7 @@ class GraphQLInterfaceType(GraphQLType):
                 'name': GraphQLField(GraphQLString),
             })
     """
+    __slots__ = ['description', '_fields', '_resolver', '_impls', '_field_map', '_possible_type_names']
 
     def __init__(self, name, fields=None, resolve_type=None, description=None):
         assert name, 'Type must be named.'
@@ -254,6 +267,8 @@ class GraphQLUnionType(GraphQLType):
                 if isinstance(value, Cat):
                     return CatType()
     """
+    __slots__ = ['description', '_possible_type_names', '_types', '_resolve_type']
+
     def __init__(self, name, types=None, resolve_type=None, description=None):
         assert name, 'Type must be named.'
         self.name = name
@@ -306,6 +321,8 @@ class GraphQLEnumType(GraphQLType):
 
     Note: If a value is not provided in a definition, the name of the enum value will be used as it's internal value.
     """
+    __slots__ = ['description', '_values', '_value_map', '_value_lookup', '_name_lookup']
+
     def __init__(self, name, values, description=None):
         self.name = name
         self.description = description
@@ -396,6 +413,8 @@ class GraphQLInputObjectType(GraphQLType):
                     default_value=0)
             }
     """
+    __slots__ = ['description', '_fields', '_field_map']
+
     def __init__(self, name, fields, description=None):
         assert name, 'Type must be named.'
         self.name = name
@@ -410,10 +429,13 @@ class GraphQLInputObjectType(GraphQLType):
 
 
 class GraphQLInputObjectField(object):
-    def __init__(self, type, default_value=None, description=None):
+    __slots__ = ['type', 'default_value', 'description', 'name']
+
+    def __init__(self, type, default_value=None, description=None, name=None):
         self.type = type
         self.default_value = default_value
         self.description = description
+        self.name = name
 
 
 class GraphQLList(GraphQLType):
@@ -434,6 +456,8 @@ class GraphQLList(GraphQLType):
                     'children': GraphQLField(GraphQLList(PersonType())),
                 }
     """
+    __slots__ = ['of_type']
+
     def __init__(self, type):
         self.of_type = type
 
@@ -458,6 +482,8 @@ class GraphQLNonNull(GraphQLType):
 
     Note: the enforcement of non-nullability occurs within the executor.
     """
+    __slots__ = ['of_type']
+
     def __init__(self, type):
         assert not isinstance(type, GraphQLNonNull), \
             'Cannot nest NonNull inside NonNull.'
