@@ -1,13 +1,10 @@
-from .execution import execute, ExecutionResult
-from .language.source import Source
-from .language.parser import parse
-from .validation import validate
+from .execution import execute
+from .execution.base import ExecutionResult
+from .base import parse_request_and_validate
 
 
 def graphql(schema, request='', root=None, vars=None, operation_name=None):
-    source = Source(request, 'GraphQL request')
-    ast = parse(source)
-    validation_errors = validate(schema, ast)
+    ast, validation_errors = parse_request_and_validate(schema, request)
     if validation_errors:
         return ExecutionResult(
             data=None,
