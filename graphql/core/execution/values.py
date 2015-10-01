@@ -11,7 +11,7 @@ from ..type import (
     GraphQLScalarType,
     is_input_type
 )
-from ..utils import is_nullish, type_from_ast
+from ..utils import type_from_ast
 
 __all__ = ['get_variable_values', 'get_argument_values']
 
@@ -47,7 +47,7 @@ def get_argument_values(arg_defs, arg_asts, variables):
             value_ast,
             variables
         )
-        if is_nullish(value) and not is_nullish(arg_def.default_value):
+        if value is None and arg_def.default_value is not None:
             value = arg_def.default_value
         result[name] = value
     return result
@@ -65,7 +65,7 @@ def get_variable_value(schema, definition_ast, input):
             [definition_ast]
         )
     if is_valid_value(type, input):
-        if is_nullish(input):
+        if input is None:
             default_value = definition_ast.default_value
             if default_value:
                 return coerce_value_ast(type, default_value, None)
@@ -83,11 +83,11 @@ def get_variable_value(schema, definition_ast, input):
 def is_valid_value(type, value):
     """Given a type and any value, return True if that value is valid."""
     if isinstance(type, GraphQLNonNull):
-        if is_nullish(value):
+        if value is None:
             return False
         return is_valid_value(type.of_type, value)
 
-    if is_nullish(value):
+    if value is None:
         return True
 
     if isinstance(type, GraphQLList):
@@ -116,7 +116,7 @@ def is_valid_value(type, value):
     assert isinstance(type, (GraphQLScalarType, GraphQLEnumType)), \
         'Must be input type'
 
-    return not is_nullish(type.parse_value(value))
+    return type.parse_value(value) is not None
 
 
 def coerce_value(type, value):
@@ -127,7 +127,7 @@ def coerce_value(type, value):
         # We only call this function after calling isValidValue.
         return coerce_value(type.of_type, value)
 
-    if is_nullish(value):
+    if value is None:
         return None
 
     if isinstance(type, GraphQLList):
@@ -150,11 +150,7 @@ def coerce_value(type, value):
     assert isinstance(type, (GraphQLScalarType, GraphQLEnumType)), \
         'Must be input type'
 
-    parsed = type.parse_value(value)
-    if not is_nullish(parsed):
-        return parsed
-
-    return None
+    return type.parse_value(value)
 
 
 def coerce_value_ast(type, value_ast, variables):
@@ -209,7 +205,4 @@ def coerce_value_ast(type, value_ast, variables):
         'Must be input type'
 
     parsed = type.parse_literal(value_ast)
-    if not is_nullish(parsed):
-        return parsed
-
-    return None
+    return parsed

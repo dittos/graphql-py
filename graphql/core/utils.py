@@ -32,10 +32,6 @@ def type_from_ast(schema, input_type_ast):
     return schema.get_type(input_type_ast.name.value)
 
 
-def is_nullish(value):
-    return value is None or value != value
-
-
 def pop(lst):
     if lst:
         lst.pop()
@@ -211,4 +207,4 @@ def is_valid_literal_value(type, value_ast):
 
     assert isinstance(type, (GraphQLScalarType, GraphQLEnumType)), 'Must be input type'
 
-    return not is_nullish(type.parse_literal(value_ast))
+    return type.parse_literal(value_ast) is not None
