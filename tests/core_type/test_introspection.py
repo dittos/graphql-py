@@ -16,79 +16,8 @@ from graphql.core.type import (
     GraphQLEnumType,
     GraphQLEnumValue,
 )
+from graphql.core.utils import introspection_query
 from graphql.core.validation.rules import ProvidedNonNullArguments
-
-introspection_query = '''
-  query IntrospectionQuery {
-    __schema {
-      queryType { name }
-      mutationType { name }
-      types {
-        ...FullType
-      }
-      directives {
-        name
-        args {
-          name
-          type { ...TypeRef }
-          defaultValue
-        }
-        onOperation
-        onFragment
-        onField
-      }
-    }
-  }
-  fragment FullType on __Type {
-    kind
-    name
-    fields {
-      name
-      args {
-        name
-        type { ...TypeRef }
-        defaultValue
-      }
-      type {
-        ...TypeRef
-      }
-      isDeprecated
-      deprecationReason
-    }
-    inputFields {
-      name
-      type { ...TypeRef }
-      defaultValue
-    }
-    interfaces {
-      ...TypeRef
-    }
-    enumValues {
-      name
-      isDeprecated
-      deprecationReason
-    }
-    possibleTypes {
-      ...TypeRef
-    }
-  }
-  fragment TypeRef on __Type {
-    kind
-    name
-    ofType {
-      kind
-      name
-      ofType {
-        kind
-        name
-        ofType {
-          kind
-          name
-        }
-      }
-    }
-  }
-'''
 
 
 def sort_lists(value):
@@ -105,7 +34,7 @@ def sort_lists(value):
 def test_executes_an_introspection_query():
     EmptySchema = GraphQLSchema(GraphQLObjectType('QueryRoot', {}))
 
-    result = graphql(EmptySchema, introspection_query)
+    result = graphql(EmptySchema, introspection_query())
     assert not result.errors
     assert sort_lists(result.data) == sort_lists({'__schema': {'directives': [{'args': [{'defaultValue': None,
                                                                   'name': 'if',

@@ -212,3 +212,77 @@ def is_valid_literal_value(type, value_ast):
     assert isinstance(type, (GraphQLScalarType, GraphQLEnumType)), 'Must be input type'
 
     return not is_nullish(type.parse_literal(value_ast))
+
+
+def introspection_query():
+    return '''
+      query IntrospectionQuery {
+        __schema {
+          queryType { name }
+          mutationType { name }
+          types {
+            ...FullType
+          }
+          directives {
+            name
+            args {
+              name
+              type { ...TypeRef }
+              defaultValue
+            }
+            onOperation
+            onFragment
+            onField
+          }
+        }
+      }
+      fragment FullType on __Type {
+        kind
+        name
+        fields {
+          name
+          args {
+            name
+            type { ...TypeRef }
+            defaultValue
+          }
+          type {
+            ...TypeRef
+          }
+          isDeprecated
+          deprecationReason
+        }
+        inputFields {
+          name
+          type { ...TypeRef }
+          defaultValue
+        }
+        interfaces {
+          ...TypeRef
+        }
+        enumValues {
+          name
+          isDeprecated
+          deprecationReason
+        }
+        possibleTypes {
+          ...TypeRef
+        }
+      }
+      fragment TypeRef on __Type {
+        kind
+        name
+        ofType {
+          kind
+          name
+          ofType {
+            kind
+            name
+            ofType {
+              kind
+              name
+            }
+          }
+        }
+      }
+'''
