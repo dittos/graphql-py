@@ -42,6 +42,11 @@ def test_parses_constant_default_values():
     assert 'Syntax Error GraphQL (1:37) Unexpected $' in str(excinfo.value)
 
 
+def test_parses_named_and_unnamed_queries():
+    parse('query Name { a }')
+    parse('query { a }')
+
+
 def test_parses_kitchen_sink():
     parse(KITCHEN_SINK)
 
